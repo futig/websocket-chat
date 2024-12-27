@@ -58,7 +58,6 @@ func serveWs(hub *hub.Hub, w http.ResponseWriter, r *http.Request) {
 	go client.WritePump()
 }
 
-// serveHome отдаёт index.html
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/index.html")
 }
@@ -73,6 +72,8 @@ func (s *Server) Run() {
 	})
 
 	addr := fmt.Sprintf("%s:%d", s.IpAddr, s.Port)
+	lg := fmt.Sprintf("Сервер слушает по адресу %s", addr)
+	log.Println(lg)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

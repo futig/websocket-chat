@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"log"
-	"time"
 
 	h "github.com/futig/websocket-chat/internal/helpers"
 	ifaces "github.com/futig/websocket-chat/internal/interfaces"
@@ -48,13 +47,6 @@ func (c *Client) ReadPump() {
         c.hub.Unregister(c)
         c.close()
     }()
-
-	c.conn.SetReadLimit(512)
-    c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-    c.conn.SetPongHandler(func(string) error {
-        c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-        return nil
-    })
 
 	for {
 		_, msgData, err := c.conn.ReadMessage()

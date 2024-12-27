@@ -1,29 +1,30 @@
 package hub
 
 import (
+	"sync"
+
 	hp "github.com/futig/websocket-chat/internal/helpers"
 	ifaces "github.com/futig/websocket-chat/internal/interfaces"
-	"sync"
 )
 
 type Hub struct {
-	clients    map[string]ifaces.Client
+	clients map[string]ifaces.Client
 
 	register   chan ifaces.Client
 	unregister chan ifaces.Client
 	broadcast  chan hp.Message
 	direct     chan hp.DirectMessage
 
-	mu         sync.RWMutex
+	mu sync.RWMutex
 }
 
 func NewHub() *Hub {
 	h := &Hub{
 		clients:    make(map[string]ifaces.Client),
-		register:   make(chan ifaces.Client),
-		unregister: make(chan ifaces.Client),
-		broadcast:  make(chan hp.Message),
-		direct:     make(chan hp.DirectMessage),
+		register:   make(chan ifaces.Client, 100),
+		unregister: make(chan ifaces.Client, 100),
+		broadcast:  make(chan hp.Message, 100),
+		direct:     make(chan hp.DirectMessage, 100),
 	}
 	return h
 }
@@ -53,13 +54,19 @@ func (h *Hub) Run() {
 			}
 			h.mu.Unlock()
 		case message := <-h.broadcast:
+			ignore := ""
+			if message.MType == "MSG" {
+				ignore = message.ID
+			}
 			h.mu.RLock()
 			for _, client := range h.clients {
-				select {
-				case client.Send() <- message:
-				default:
-					close(client.Send())
-					delete(h.clients, client.ID())
+				if client.ID() != ignore {
+					select {
+					case client.Send() <- message:
+					default:
+						close(client.Send())
+						delete(h.clients, client.ID())
+					}
 				}
 			}
 			h.mu.RUnlock()
@@ -74,6 +81,8 @@ func (h *Hub) Run() {
 				}
 			}
 			h.mu.RUnlock()
+		default:
+			continue
 		}
 	}
 }

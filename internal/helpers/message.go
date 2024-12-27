@@ -11,3 +11,5 @@ type DirectMessage struct {
 	To      string
 	Message Message
 }
+
+
